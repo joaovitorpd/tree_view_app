@@ -5,6 +5,7 @@ import 'package:tree_view_app/src/assets/data/datasources/location_data_source.d
 import 'package:tree_view_app/src/assets/data/models/assets_model.dart';
 import 'package:tree_view_app/src/assets/data/models/location_model.dart';
 import 'package:tree_view_app/src/assets/domain/entities/asset.dart';
+import 'package:tree_view_app/src/assets/domain/entities/component.dart';
 import 'package:tree_view_app/src/assets/domain/entities/location.dart';
 
 class HomePage extends StatefulWidget {
@@ -46,14 +47,15 @@ class _HomePageState extends State<HomePage> {
     var allAssetsModel = await AssetsDataSource(client: client).getAssets();
     List<dynamic> root = [];
 
-    var allLocations = locationModelToLocal(allLocationsModel);
-    var allAssets = assetsModelToLocal(allAssetsModel);
+    var allLocations = locationModelToLocation(allLocationsModel);
+    var allAssets = assetsModelToAssets(allAssetsModel);
+    var components = assetsModelToComponents(allAssetsModel);
 
-    root = treeBuilder(allLocations, allAssets);
+    root = treeBuilder(allLocations, allAssets, components);
   }
 }
 
-List locationModelToLocal(List<LocationModel> allLocationsModel) {
+List locationModelToLocation(List<LocationModel> allLocationsModel) {
   var allLocations = [];
 
   for (var i = 0; i < allLocationsModel.length; i++) {
@@ -69,85 +71,133 @@ List locationModelToLocal(List<LocationModel> allLocationsModel) {
   return allLocations;
 }
 
-List assetsModelToLocal(List<AssetsModel> allAssetsModel) {
+List assetsModelToAssets(List<AssetsModel> allAssetsModel) {
   var allAssets = [];
 
   for (var i = 0; i < allAssetsModel.length; i++) {
-    Asset asset = Asset(
-      gatewayId: allAssetsModel[i].gatewayId,
-      id: allAssetsModel[i].id,
-      locationId: allAssetsModel[i].locationId,
-      name: allAssetsModel[i].name,
-      parentId: allAssetsModel[i].parentId,
-      sensorId: allAssetsModel[i].sensorId,
-      sensorType: allAssetsModel[i].sensorType,
-      status: allAssetsModel[i].status,
-      children: [],
-    );
-    allAssets.add(asset);
+    if (allAssetsModel[i].sensorType == null &&
+        allAssetsModel[i].status == null &&
+        allAssetsModel[i].sensorId == null) {
+      Asset asset = Asset(
+        id: allAssetsModel[i].id,
+        name: allAssetsModel[i].name,
+        parentId: allAssetsModel[i].parentId ?? allAssetsModel[i].locationId,
+        children: [],
+      );
+      allAssets.add(asset);
+    }
   }
   return allAssets;
 }
 
-List treeBuilder(List allLocations, List allAssets) {
-  List root = [];
-  var components =
-      allAssets.where((x) => x.sensorType != null && x.status != null).toList();
-  allAssets.removeWhere((x) => components.contains(x));
+List assetsModelToComponents(List<AssetsModel> allAssetsModel) {
+  var components = [];
 
-  for (var i = 0; i < allAssets.length; i++) {
+  for (var i = 0; i < allAssetsModel.length; i++) {
+    if (allAssetsModel[i].sensorType != null &&
+        allAssetsModel[i].status != null &&
+        allAssetsModel[i].sensorId != null) {
+      Component component = Component(
+        id: allAssetsModel[i].id,
+        name: allAssetsModel[i].name,
+        parentId: allAssetsModel[i].parentId ?? allAssetsModel[i].locationId,
+        sensorId: allAssetsModel[i].sensorId,
+        sensorType: allAssetsModel[i].sensorType,
+        status: allAssetsModel[i].status,
+        gatewayId: allAssetsModel[i].gatewayId,
+      );
+      components.add(component);
+    }
+  }
+
+  return components;
+}
+
+List treeBuilder(List allLocations, List allAssets, List components) {
+  List root = [];
+
+  /* for (var i = 0; i < allAssets.length; i++) {
     var children =
         components.where((x) => x.parentId == allAssets[i].id).toList();
     components.removeWhere((x) => children.contains(x));
     for (var t = 0; t < children.length; t++) {
       allAssets[i].children.add(children[t]);
     }
-  }
+  } */
 
-  var subAssets = allAssets
-      .where((x) => x.parentId != null && x.locationId == null)
-      .toList();
-  allAssets.removeWhere((x) => subAssets.contains(x));
+  childrenAssignig(childrenList: components, parentsList: allAssets);
 
-  for (var i = 0; i < allAssets.length; i++) {
+  /* var subAssets = allAssets.where((x) => x.parentId != null).toList();
+  allAssets.removeWhere((x) => subAssets.contains(x)); */
+
+  /* for (var i = 0; i < allAssets.length; i++) {
     var children =
         subAssets.where((x) => x.parentId == allAssets[i].id).toList();
     subAssets.removeWhere((x) => children.contains(x));
     for (var t = 0; t < children.length; t++) {
       allAssets[i].children.add(children[t]);
     }
-  }
+  } */
 
-  for (var i = 0; i < allLocations.length; i++) {
+  childrenAssignig(childrenList: allAssets, parentsList: allAssets);
+
+  /* for (var i = 0; i < allLocations.length; i++) {
     var children =
         components.where((x) => x.locationId == allLocations[i].id).toList();
     components.removeWhere((x) => children.contains(x));
     for (var t = 0; t < children.length; t++) {
       allLocations[i].children.add(children[t]);
     }
-  }
+  } */
 
-  for (var i = 0; i < allLocations.length; i++) {
+  childrenAssignig(childrenList: components, parentsList: allLocations);
+
+  /* for (var i = 0; i < allLocations.length; i++) {
     var children =
         allAssets.where((x) => x.locationId == allLocations[i].id).toList();
     allAssets.removeWhere((x) => children.contains(x));
     for (var t = 0; t < children.length; t++) {
       allLocations[i].children.add(children[t]);
     }
-  }
+  } */
 
-  var subLocations = allLocations.where((x) => x.parentId != null).toList();
-  allLocations.removeWhere((x) => subLocations.contains(x));
+  childrenAssignig(childrenList: allAssets, parentsList: allLocations);
 
-  for (var i = 0; i < allLocations.length; i++) {
+  /* var subLocations = allLocations.where((x) => x.parentId != null).toList();
+  allLocations.removeWhere((x) => subLocations.contains(x)); */
+
+  /* for (var i = 0; i < allLocations.length; i++) {
     var children =
         subLocations.where((x) => x.parentId == allLocations[i].id).toList();
     subLocations.removeWhere((x) => children.contains(x));
     for (var t = 0; t < children.length; t++) {
       allLocations[i].children.add(children[t]);
     }
-  }
+  } */
+
+  childrenAssignig(childrenList: allLocations, parentsList: allLocations);
+  components.removeWhere((x) => x.parentId != null);
+  allAssets.removeWhere((x) => x.parentId != null);
+  allLocations.removeWhere((x) => x.parentId != null);
 
   root = components + allAssets + allLocations;
   return root;
+}
+
+List<dynamic> childrenAssignig({
+  required List childrenList,
+  required List parentsList,
+}) {
+  for (var i = 0; i < parentsList.length; i++) {
+    var children =
+        childrenList.where((x) => x.parentId == parentsList[i].id).toList();
+
+    parentsList[i].children.addAll(children);
+
+    /* for (var t = 0; t < children.length; t++) {
+      parentsList[i].children.add(children[t]);
+    }
+    childrenList.removeWhere((x) => children.contains(x)); */
+  }
+  return parentsList;
 }
