@@ -1,14 +1,14 @@
-import 'package:tree_view_app/src/assets/domain/entities/level.dart';
+import 'package:equatable/equatable.dart';
 
-/* class Asset extends Equatable {
-  const Asset({
+class Level extends Equatable {
+  const Level({
     required this.id,
     required this.name,
     required this.parentId,
     required this.children,
   });
 
-  const Asset.empty()
+  const Level.empty()
       : id = null,
         name = null,
         parentId = null,
@@ -17,16 +17,8 @@ import 'package:tree_view_app/src/assets/domain/entities/level.dart';
   final String? id;
   final String? name;
   final String? parentId;
-  final List? children;
+  final List<Level>? children;
 
   @override
   List<Object?> get props => [id, name, parentId, children];
-} */
-
-class Asset extends Level {
-  const Asset(
-      {required super.id,
-      required super.name,
-      required super.parentId,
-      required super.children});
 }
