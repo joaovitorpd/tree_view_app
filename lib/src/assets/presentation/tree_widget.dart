@@ -57,7 +57,7 @@ class _TreeWidgetState extends State<TreeWidget> {
                         .contains(widget.searchController.text.toLowerCase()))
                     .toList();
 
-                searchedItems = _parentBuilder(widget.allItems, searchedItems);
+                searchedItems = _treeRebuilder(widget.allItems, searchedItems);
               } else {
                 searchedItems = List.from(widget.allItems);
               }
@@ -114,18 +114,24 @@ class _TreeWidgetState extends State<TreeWidget> {
     );
   }
 
-  List<Level> _parentBuilder(List<Level> allItems, List<Level> levels) {
+  List<Level> _treeRebuilder(List<Level> allItems, List<Level> levels) {
+    List<Level> missingParents = [];
     for (var i = 0; i < levels.length; i++) {
-      if (allItems.any((item) => item.id == levels[i].parentId)) {
-        var parent =
-            allItems.firstWhere((item) => item.id == levels[i].parentId);
-
-        if (!levels.any((level) => level.id == parent.id)) {
-          levels.add(parent);
-          //levels.addAll(allItems.where((item) => item.id == levels[i].parentId));
-        }
+      if (levels[i].parentId != null &&
+          !levels.any((item) => item.id == levels[i].parentId)) {
+        _parentFinder(allItems, missingParents, levels[i]);
       }
     }
+    levels.addAll(missingParents);
     return levels;
+  }
+
+  void _parentFinder(
+      List<Level> allItems, List<Level> missingParents, Level item) {
+    if (item.parentId != null || !missingParents.any((e) => e.id == item.id)) {
+      var parent = allItems.firstWhere((x) => x.id == item.parentId);
+      missingParents.add(parent);
+      _parentFinder(allItems, missingParents, parent);
+    }
   }
 }

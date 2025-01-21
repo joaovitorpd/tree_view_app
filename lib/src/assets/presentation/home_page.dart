@@ -51,9 +51,6 @@ class _HomePageState extends State<HomePage> {
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 items = snapshot.data!;
-                //searchedItems = snapshot.data!;
-
-                //tree = treeClass.buidTree(searchedItems);
 
                 return TreeWidget(
                     searchController: searchController,
