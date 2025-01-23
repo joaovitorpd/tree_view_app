@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tree_view_app/core/utils/constants.dart';
 import 'package:tree_view_app/src/assets/domain/entities/level.dart';
 import 'package:tree_view_app/src/assets/presentation/tree.dart';
 
@@ -20,6 +21,8 @@ class TreeWidget extends StatefulWidget {
 class _TreeWidgetState extends State<TreeWidget> {
   List<Level> searchedItems = [];
   List<Level> tree = [];
+  bool energySelected = false;
+  bool criticalSelected = false;
 
   @override
   void initState() {
@@ -43,49 +46,111 @@ class _TreeWidgetState extends State<TreeWidget> {
         .toList());
     return Column(
       children: [
-        Expanded(
-          flex: 1,
-          child: TextFormField(
-            decoration: const InputDecoration(label: Text("Search")),
-            controller: widget.searchController,
-            textInputAction: TextInputAction.done,
-            onEditingComplete: () {
-              if (widget.searchController.text.isNotEmpty) {
-                searchedItems = searchedItems
-                    .where((item) => item.name!
-                        .toLowerCase()
-                        .contains(widget.searchController.text.toLowerCase()))
-                    .toList();
+        SizedBox(
+          width: MediaQuery.of(context).size.height,
+          height: MediaQuery.of(context).size.height * 0.12,
+          child: Column(
+            children: [
+              SizedBox(
+                width: MediaQuery.of(context).size.height,
+                height: MediaQuery.of(context).size.height * 0.05,
+                child: TextFormField(
+                  decoration: const InputDecoration(label: Text("Search")),
+                  controller: widget.searchController,
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: () {
+                    if (widget.searchController.text.isNotEmpty) {
+                      searchedItems = searchedItems
+                          .where((item) => item.name!.toLowerCase().contains(
+                              widget.searchController.text.toLowerCase()))
+                          .toList();
 
-                searchedItems = _treeRebuilder(widget.allItems, searchedItems);
-              } else {
-                searchedItems = List.from(widget.allItems);
-              }
-              FocusScope.of(context).unfocus();
-              setState(() {});
-            },
-            onChanged: (value) {
-              if (value.isEmpty) {
-                searchedItems = widget.allItems;
-                setState(() {});
-              }
-            },
-            /* onChanged: (value) {
-              if (value.length > 2) {
-                setState(() {
-                  searchedItems
-                      .where((item) =>
-                          item.name!.contains(widget.searchController.text))
-                      .toList();
-                  tree = widget.treeClass.buidTree(searchedItems);
-                });
-              }
-              widget.searchController.text = value;
-            }, */
+                      searchedItems =
+                          _treeRebuilder(widget.allItems, searchedItems);
+                    } else {
+                      searchedItems = List.from(widget.allItems);
+                    }
+                    FocusScope.of(context).unfocus();
+                    setState(() {});
+                  },
+                  onChanged: (value) {
+                    if (value.isEmpty) {
+                      searchedItems = widget.allItems;
+                      setState(() {});
+                    }
+                  },
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  //Energy Sensor Filter Button
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor:
+                          energySelected ? Colors.blue : Colors.white,
+                    ),
+                    onPressed: () {
+                      if (energySelected) {
+                        energySelected = false;
+                      } else {
+                        energySelected = true;
+                      }
+                      energySelected
+                          ? searchedItems = searchedItems
+                              .where((item) =>
+                                  item.sensorType == SensorType.energy)
+                              .toList()
+                          : searchedItems = List.from(widget.allItems);
+                      searchedItems =
+                          _treeRebuilder(widget.allItems, searchedItems);
+                      setState(() {});
+                    },
+                    child: Text(
+                      "Sensor de Energia",
+                      style: TextStyle(
+                        color: energySelected ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ),
+                  //Critical Filter Button
+                  const SizedBox(
+                    width: 10.0,
+                  ),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor:
+                          criticalSelected ? Colors.blue : Colors.white,
+                    ),
+                    onPressed: () {
+                      if (criticalSelected) {
+                        criticalSelected = false;
+                      } else {
+                        criticalSelected = true;
+                      }
+                      criticalSelected
+                          ? searchedItems = searchedItems
+                              .where((item) => item.status == Status.alert)
+                              .toList()
+                          : searchedItems = List.from(widget.allItems);
+                      searchedItems =
+                          _treeRebuilder(widget.allItems, searchedItems);
+                      setState(() {});
+                    },
+                    child: Text(
+                      "Crítico",
+                      style: TextStyle(
+                        color: criticalSelected ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         Expanded(
-          flex: 9,
+          //flex: 7,
           child: ListView.builder(
             itemCount: tree.length,
             itemBuilder: (context, index) {
@@ -128,7 +193,8 @@ class _TreeWidgetState extends State<TreeWidget> {
 
   void _parentFinder(
       List<Level> allItems, List<Level> missingParents, Level item) {
-    if (item.parentId != null || !missingParents.any((e) => e.id == item.id)) {
+    if (item.parentId != null &&
+        !missingParents.any((e) => e.id == item.parentId)) {
       var parent = allItems.firstWhere((x) => x.id == item.parentId);
       missingParents.add(parent);
       _parentFinder(allItems, missingParents, parent);
